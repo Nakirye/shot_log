@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Shot Log</title>
+  <meta name="description" content="Log espresso shots, beans and taste profiles.">
+  <meta name="theme-color" content="#8a4b25" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#221a14" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Shot Log">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-row">
+      <h1>☕ Shot Log</h1>
+      <div class="topbar-pills">
+        <button type="button" id="power-pill" class="pill power-pill" hidden data-goto="machine" aria-label="Machine power"></button>
+        <button type="button" id="sync-status" class="sync-status" hidden data-goto="settings"></button>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button data-view="shots" class="active">Shots</button>
+      <button data-view="new">New shot</button>
+      <button data-view="beans">Beans</button>
+      <button data-view="recipes">Recipes</button>
+      <button data-view="settings">Setup</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- SHOT LIST -->
+    <section id="view-shots" class="view active">
+      <div class="toolbar">
+        <select id="filter-bean" aria-label="Filter by beans"><option value="">All beans</option></select>
+        <select id="sort-shots" aria-label="Sort">
+          <option value="new">Newest</option>
+          <option value="old">Oldest</option>
+          <option value="rating">Best rated</option>
+        </select>
+      </div>
+      <div id="bean-summary"></div>
+      <div id="shot-list" class="list"></div>
+    </section>
+
+    <!-- NEW / EDIT SHOT -->
+    <section id="view-new" class="view">
+      <form id="shot-form" autocomplete="off">
+        <h2 id="shot-form-title" class="page-title">New shot</h2>
+        <input type="hidden" name="id">
+
+        <div class="card">
+          <h3>Coffee</h3>
+          <label>Beans<select name="beanId" required></select></label>
+          <p class="hint" id="no-beans-hint" hidden>Add a bean in the <a href="#" data-goto="beans">Beans</a> tab first.</p>
+          <label>Date &amp; time<input type="datetime-local" name="createdAt" required></label>
+        </div>
+
+        <div class="card">
+          <h3>Recipe</h3>
+          <div id="recipe-picker-row" hidden>
+            <select id="recipe-picker" aria-label="Load a saved recipe"></select>
+            <p id="recipe-loaded" class="hint" hidden></p>
+          </div>
+          <div class="grid-2">
+            <label>Grind<input name="grind" inputmode="decimal" required placeholder="12"></label>
+            <label>Time (s)<input type="number" step="1" min="0" name="time" required placeholder="28"></label>
+            <label>Dose in (g)<input type="number" step="0.1" min="0" name="dose" required placeholder="18"></label>
+            <label>Yield out (g)<input type="number" step="0.1" min="0" name="yield" required placeholder="36"></label>
+          </div>
+          <div class="recipe-meta">
+            <span>Ratio <strong id="ratio-out">–</strong></span>
+            <button type="button" id="timer-btn" class="secondary small">▶ Timer</button>
+          </div>
+          <details class="more">
+            <summary>More settings</summary>
+            <div class="grid-2">
+              <label>Water temp (°C)<input type="number" step="0.5" name="temp" placeholder="93"></label>
+              <label>Pre-infusion (s)<input type="number" step="1" min="0" name="preinfusion" placeholder="0"></label>
+              <label class="full">Basket<input name="basket" list="basket-options" placeholder="Double"></label>
+            </div>
+          </details>
+          <datalist id="basket-options">
+            <option value="Single">
+            <option value="Double">
+            <option value="Triple">
+            <option value="Pressurized">
+          </datalist>
+        </div>
+
+        <div class="card">
+          <h3>Taste</h3>
+          <div class="field-label">Rating</div>
+          <div id="rating-input" class="stars" role="radiogroup" aria-label="Rating"></div>
+          <div class="field-label">Barista compass
+            <button type="button" id="compass-clear" class="link small push-right" hidden>Clear</button>
+          </div>
+          <div id="compass-pad" class="compass-pad" tabindex="0" aria-label="Barista compass — tap or use arrow keys"></div>
+          <p id="compass-advice" class="compass-advice"></p>
+          <div class="field-label">Profile <span class="hint-inline">0 = none · 5 = strong</span></div>
+          <div id="taste-sliders" class="sliders"></div>
+          <div class="field-label">Flavors</div>
+          <div id="flavor-tags" class="tags"></div>
+          <input id="custom-flavor" placeholder="Add your own flavor, then press Enter" aria-label="Add flavor">
+          <label class="spaced">Notes
+            <textarea name="notes" rows="3" placeholder="Channeling? Puck prep? What to change next time?"></textarea>
+          </label>
+        </div>
+
+        <div id="dial-in" class="dial-in" hidden></div>
+
+        <div class="form-actions">
+          <button type="submit" class="primary">Save shot</button>
+          <button type="button" id="shot-cancel" class="secondary">Cancel</button>
+          <button type="button" id="shot-delete" class="link del push-right" data-act="del-shot" hidden>Delete</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- BEANS -->
+    <section id="view-beans" class="view">
+      <div class="toolbar">
+        <button type="button" id="bean-add" class="primary">+ Add beans</button>
+        <label class="inline-check"><input type="checkbox" id="show-archived"> Show finished</label>
+      </div>
+
+      <form id="bean-form" class="card" autocomplete="off" hidden>
+        <h3 id="bean-form-title">Add beans</h3>
+        <input type="hidden" name="id">
+        <label>Name<input name="name" required placeholder="e.g. Ethiopia Guji"></label>
+        <div class="grid-2">
+          <label>Roaster<input name="roaster" placeholder="Roastery"></label>
+          <label>Origin<input name="origin" placeholder="Country / region"></label>
+          <label>Process
+            <select name="process">
+              <option value="">–</option>
+              <option>Washed</option>
+              <option>Natural</option>
+              <option>Honey</option>
+              <option>Anaerobic</option>
+              <option>Wet-hulled</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label>Roast level
+            <select name="roast">
+              <option value="">–</option>
+              <option>Light</option>
+              <option>Medium-light</option>
+              <option>Medium</option>
+              <option>Medium-dark</option>
+              <option>Dark</option>
+            </select>
+          </label>
+          <label>Roast date<input type="date" name="roastDate"></label>
+          <label>Opened on<input type="date" name="openDate"></label>
+        </div>
+        <label id="bean-recipe-row" class="spaced" hidden>Starting recipe
+          <select name="recipeId"></select>
+          <span class="hint-inline">Pre-fills the first shot of this bag. Recipes from similar beans are listed first.</span>
+        </label>
+        <details class="more">
+          <summary>More details</summary>
+          <div class="grid-2">
+            <label>Variety<input name="variety" placeholder="e.g. Bourbon"></label>
+            <label>Type
+              <select name="type">
+                <option value="">–</option>
+                <option>Single origin</option>
+                <option>Blend</option>
+              </select>
+            </label>
+          </div>
+          <label>Roaster's tasting notes<input name="notes" placeholder="e.g. jasmine, peach, honey"></label>
+        </details>
+        <div class="form-actions">
+          <button type="submit" class="primary">Save</button>
+          <button type="button" id="bean-cancel" class="secondary">Cancel</button>
+          <button type="button" id="bean-delete" class="link del push-right" data-act="del-bean" hidden>Delete</button>
+        </div>
+      </form>
+
+      <div id="bean-list" class="list"></div>
+    </section>
+
+    <!-- RECIPES -->
+    <section id="view-recipes" class="view">
+      <div class="toolbar">
+        <select id="recipe-filter" aria-label="Filter recipes">
+          <option value="">All recipes</option>
+          <option value="espresso">Espresso</option>
+          <option value="pourover">Pour-over</option>
+        </select>
+        <button type="button" id="po-add" class="primary">+ Pour-over</button>
+      </div>
+
+      <form id="po-form" class="card" autocomplete="off" hidden>
+        <h3 id="po-form-title">New pour-over recipe</h3>
+        <input type="hidden" name="id">
+        <label>Name<input name="name" placeholder="e.g. V60 everyday"></label>
+        <div class="grid-2">
+          <label>Brewer<input name="brewer" list="brewer-options" placeholder="V60"></label>
+          <label>Filter<input name="filter" list="filter-options" placeholder="Paper"></label>
+          <label class="full">Beans (optional)
+            <select name="beanId"></select>
+          </label>
+          <label>Coffee (g)<input type="number" step="0.1" min="0" name="dose" required placeholder="15"></label>
+          <label>Water (g)<input type="number" step="1" min="0" name="water" required placeholder="250"></label>
+          <label>Grind<input name="grind" inputmode="decimal" placeholder="22"></label>
+          <label>Water temp (°C)<input type="number" step="0.5" name="temp" placeholder="94"></label>
+          <label>Total time<input name="time" inputmode="numeric" placeholder="3:00"></label>
+          <label>Ratio<span class="static-value" id="po-ratio">–</span></label>
+        </div>
+        <datalist id="brewer-options">
+          <option value="V60"><option value="Kalita Wave"><option value="Chemex"><option value="Origami">
+          <option value="April Brewer"><option value="Orea"><option value="Clever Dripper"><option value="Melitta">
+        </datalist>
+        <datalist id="filter-options">
+          <option value="Paper"><option value="Paper (bleached)"><option value="Paper (unbleached)">
+          <option value="Cafec Abaca"><option value="Sibarist"><option value="Metal"><option value="Cloth">
+        </datalist>
+
+        <div class="field-label">Bloom</div>
+        <div class="grid-2">
+          <label>Water (g)<input type="number" step="1" min="0" name="bloomWater" placeholder="45"></label>
+          <label>Wait (s)<input type="number" step="1" min="0" name="bloomTime" placeholder="45"></label>
+        </div>
+
+        <div class="field-label">Pours <span class="hint-inline">start · up to total g</span>
+          <button type="button" id="po-suggest" class="link small push-right">Suggest schedule</button>
+        </div>
+        <div id="po-pours" class="pour-rows"></div>
+        <button type="button" id="po-add-pour" class="secondary small">+ Add pour</button>
+
+        <label class="spaced">Notes
+          <textarea name="notes" rows="2" placeholder="Swirl after bloom, gentle stir, …"></textarea>
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="primary">Save</button>
+          <button type="button" id="po-cancel" class="secondary">Cancel</button>
+          <button type="button" id="po-delete" class="link del push-right" hidden>Delete</button>
+        </div>
+      </form>
+
+      <div id="recipe-list" class="list"></div>
+    </section>
+
+    <!-- BREW GUIDE -->
+    <section id="view-brew" class="view">
+      <button type="button" class="link back-link" data-goto="recipes">← Recipes</button>
+      <h2 class="page-title" id="brew-title"></h2>
+      <p class="item-sub brew-meta" id="brew-meta"></p>
+      <div class="card brew-card">
+        <div id="brew-clock" class="brew-clock">0:00</div>
+        <div id="brew-step" class="brew-step">Ready when you are</div>
+        <div class="brew-progress"><i id="brew-bar"></i></div>
+        <div id="brew-next" class="item-sub brew-next"></div>
+        <div class="brew-actions">
+          <button type="button" id="brew-start" class="primary">Start</button>
+          <button type="button" id="brew-reset" class="secondary">Reset</button>
+        </div>
+      </div>
+      <ol id="brew-steps" class="brew-steps"></ol>
+      <p id="brew-notes" class="shot-notes"></p>
+    </section>
+
+    <!-- MACHINE -->
+    <section id="view-machine" class="view">
+      <h2 class="page-title">Machine</h2>
+
+      <div class="card">
+        <div class="power-row">
+          <div class="power-status">
+            <span id="power-dot" class="power-dot"></span>
+            <div>
+              <div class="item-title" id="power-name">Espresso machine</div>
+              <div class="item-sub" id="power-state">–</div>
+            </div>
+          </div>
+          <button type="button" id="power-toggle" class="primary">Turn on</button>
+        </div>
+        <p class="hint error-text" id="power-error" hidden></p>
+        <p class="hint" id="power-autooff" hidden></p>
+        <p class="hint" id="power-next" hidden></p>
+      </div>
+
+      <div class="card">
+        <h3>Turn on later</h3>
+        <div class="chip-row">
+          <button type="button" class="secondary small" data-in="15">15 min</button>
+          <button type="button" class="secondary small" data-in="30">30 min</button>
+          <button type="button" class="secondary small" data-in="60">1 hour</button>
+        </div>
+        <div class="inline-add">
+          <input type="datetime-local" id="timer-at" aria-label="Turn on at">
+          <button type="button" id="timer-add" class="secondary">Add</button>
+        </div>
+        <div id="timer-list" class="mini-list"></div>
+      </div>
+
+      <div class="card">
+        <h3>Weekly schedule</h3>
+        <div id="schedule-list" class="mini-list"></div>
+        <div class="schedule-add">
+          <div class="day-picker" id="sched-days" role="group" aria-label="Days"></div>
+          <div class="inline-add">
+            <input type="time" id="sched-time" value="07:00" aria-label="Time">
+            <button type="button" id="sched-add" class="secondary">Add</button>
+          </div>
+        </div>
+        <p class="hint" id="power-tz" hidden></p>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view">
+      <form id="settings-form" class="card">
+        <h3>My setup</h3>
+        <div class="grid-2">
+          <label>Espresso machine<input name="machine" placeholder="e.g. Lelit Bianca"></label>
+          <label>Grinder<input name="grinder" placeholder="e.g. Niche Zero"></label>
+          <label>Default dose (g)<input type="number" step="0.1" name="defaultDose" placeholder="18"></label>
+          <label>Default ratio (1:x)<input type="number" step="0.1" name="defaultRatio" placeholder="2"></label>
+          <label>Target time min (s)<input type="number" name="targetMin" placeholder="25"></label>
+          <label>Target time max (s)<input type="number" name="targetMax" placeholder="32"></label>
+        </div>
+        <div class="actions"><button type="submit" class="primary">Save setup</button></div>
+      </form>
+
+      <form id="sync-form" class="card" autocomplete="off">
+        <h3>Sync between devices</h3>
+        <p class="hint">Run <code>server.py</code> on a computer or server you control and enter the same token on every device.
+          Changes are saved offline and synced automatically when a connection is available.</p>
+        <div class="grid-2">
+          <label class="full">Server URL
+            <input name="url" type="url" inputmode="url" placeholder="Leave empty if this page is served by the sync server">
+          </label>
+          <label class="full">Sync token
+            <input name="token" type="password" placeholder="Token printed by server.py" autocomplete="off">
+          </label>
+        </div>
+        <p id="sync-info" class="hint"></p>
+        <div class="actions wrap">
+          <button type="submit" class="primary">Save &amp; sync</button>
+          <button type="button" id="sync-now" class="secondary">Sync now</button>
+          <button type="button" id="sync-disconnect" class="danger">Disconnect</button>
+        </div>
+      </form>
+
+      <div class="card" id="install-card">
+        <h3>Install app</h3>
+        <p class="hint" id="install-hint">Install Shot Log on your home screen so it opens like a normal app and works offline.</p>
+        <div class="actions"><button type="button" id="install-btn" class="primary" hidden>Install Shot Log</button></div>
+      </div>
+
+      <div class="card">
+        <h3>Data</h3>
+        <p class="hint">Your log is stored on this device (and on your sync server, if connected). Export now and then to keep a backup.</p>
+        <div class="actions wrap">
+          <button type="button" id="export-json" class="small secondary">Export backup (JSON)</button>
+          <button type="button" id="export-csv" class="small secondary">Export shots (CSV)</button>
+          <label class="button secondary small">Import backup<input type="file" id="import-json" accept="application/json" hidden></label>
+          <button type="button" id="load-demo" class="small secondary">Load demo data</button>
+          <button type="button" id="wipe" class="small danger">Delete all data</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
