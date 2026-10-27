@@ -1,6 +1,6 @@
-# Shot Log ☕ – ein Vibe-Coding-Projekt
+# Shot Log
 
-Shot Log ist ein Espresso-Tagebuch: Für jeden Shot werden Bohne, Mahlgrad, Dosis, Bezugsmenge, Bezugszeit und Geschmack festgehalten. So lässt sich nachvollziehen, mit welchen Einstellungen eine Bohne am besten schmeckt. Zusätzlich lässt sich die Espressomaschine über Home Assistant ein- und ausschalten, auch zeitgesteuert.
+Shot Log ist ein Espresso-Tagebuch: Für jeden Shot werden Bohne, Mahlgrad, Dosis, Bezugsmenge, Bezugszeit und Geschmack festgehalten. So lässt sich nachvollziehen, mit welchen Einstellungen eine Bohne oder ein Blend am besten schmeckt. Zusätzlich lässt sich die Espressomaschine über Home Assistant ein- und ausschalten, auch zeitgesteuert.
 
 Die App ist im Rahmen einer Übung zum Thema **Vibe Coding** entstanden. Im Vordergrund stand nicht ein perfektes Endprodukt, sondern Vibe Coding selbst auszuprobieren und die Erfahrungen damit festzuhalten.
 
@@ -93,32 +93,36 @@ public/icons/                App-Icons
 
 ### Was hat nicht gut funktioniert?
 
-- **Überladenes Design:** Nach dem ersten Prompt war die Oberfläche sehr überfrachtet.
+- **Überladenes Design:** Nach dem ersten Prompt war die Oberfläche sehr überladen und unübersichtlich, wenn man an den Use-Case (schnelles Erfassen von Rezepten, die wichtigsten Infos auf einen Blick) denkt.
 - **Keine Rückfragen bei großen Entscheidungen:** Die KI hat ohne eine einzige Rückfrage weitreichende Architekturentscheidungen getroffen und einfach als gegeben angenommen.
 - **Unnötige Features:** Neben sinnvollen Parametern wurden auch Dinge eingebaut, die ich nicht brauche, zum Beispiel ein Shot-Timer direkt im Formular.
 - **Design-Änderungen sind schwer zu vermitteln:** Konkrete gestalterische Änderungen in Worten so zu beschreiben, dass die KI sie wie gewünscht umsetzt, war sehr mühsam.
-- **Fachliche Logikfehler:** Wer sich mit der Thematik auskennt, erkennt schnell Logikfehler. Ein Beispiel: Die App ordnet einen Shot über den „Barista Compass“ ein, also nach Extraktion (sauer bis bitter) und Stärke. Direkt darunter bewertet man denselben Shot noch einmal über eigene Schieberegler für Säure, Süße und Bitterkeit. Das ist doppelt und kann sich widersprechen.
+- **Fachliche Logikfehler:** Wer sich mit der Thematik auskennt, erkennt schnell Logikfehler. Ein Beispiel: Die App ordnet einen Shot über den „Barista Compass“ ein, also nach Extraktion (sauer bis bitter) und Stärke. Direkt darunter bewertet man denselben Shot noch einmal über eigene Schieberegler für Säure, Süße und Bitterkeit. Das ist doppelt und kann sich widersprechen. Als zweites Beispiel ist noch das Generalisieren einer "korrekten" Brew Ratio (Verhältnis Kaffeemehl:Wasser im Espresso) und Extraktionszeit zu nennen. Das ergibt keinen Sinn, denn Barista wissen, dass u.A. der Mahlgrad einen sehr großen Einfluss auf die brew ratio UND Extraktionszeit haben kann, um ein trinkbares Ergebnis erreichen zu können. Außerdem basieren jegliche Rezept-Anpassungs-Empfehlungen der App auf Abweichungen dieser über alle Rezepte generalisierten Werte.
+
+
 
 ### Welche Probleme habe ich identifiziert?
 
 - **Verhaspeln in den eigenen Tests:** Die KI hat sich in ihren selbst geschriebenen Tests verstrickt und dabei Probleme „gefunden“, die eigentlich keine waren. Das hat unnötig Tokens verbraucht, auf das Endergebnis aber keinen negativen Einfluss gehabt.
-- **Die Qualität hängt stark vom Prompt ab:** Je abstrakter die Anfrage und je weniger Informationen man der KI mitgibt, desto freier interpretiert sie die Aufgabe, und desto unbrauchbarer wird das Ergebnis. Auf den ersten Blick wirkt es durchaus beeindruckend. Sobald man genauer hinschaut, fällt das Kartenhaus aber in sich zusammen.
+- **Die Qualität hängt stark vom Prompt ab:** Je abstrakter die Anfrage und je weniger Informationen man der KI mitgibt, desto freier interpretiert sie die Aufgabe, und desto unbrauchbarer wird das Ergebnis. Auf den ersten Blick wirkt es durchaus beeindruckend. Sobald man genauer hinschaut, fällt das Kartenhaus aber in sich zusammen, man findet Logikfehler und Features bzw. Designentscheidungen, die aus fachlicher Perspektive wenig Sinn ergeben.
+- **Expertentum:** ohne fundiertes Fachwissen (Expertenwissen) ist es schwer, die Qualität des Ergebnisses zu beurteilen. Die KI kann nicht beurteilen, ob das Endergebnis fachlich korrekt ist und Sinn ergibt. Sie kann nur die gestellte Aufgabe erledigen, "denkt" zwar mit, verfügt aber bei weitem nicht über das fundierte Fachwissen in der Thematik, das für ein gutes, praktikables Ergebnis ausschlaggebend ist.
 
 ### Erwartung vs. Realität
 
-- **Architektur:** Ich hatte ein großes Backend erwartet. Der erste Durchlauf erzeugte jedoch „nur“ eine `index.html` und eine `app.js`. Der Python-Server kam erst mit dem zweiten Prompt dazu, als es um die Synchronisation zwischen Geräten ging.
-- **Konsistenz im Code:** Hier war ich positiv überrascht. Ich hatte erwartet, dass der Code mit jeder neuen Anfrage uneinheitlicher wird. Tatsächlich blieb er über alle Prompts hinweg konsistent.
-- **Rückfragen:** Ich hatte erwartet, dass die KI bei ungenauen Anfragen nachfragt. Stattdessen kamen keinerlei Rückfragen, egal wie vage die Anfrage war. Die erste Rückfrage überhaupt kam erst beim Prompt *„Add the ability to power on the espresso machine on a timer“*.
+- **Architektur:** Ich hatte ein großes Backend erwartet. Der erste Durchlauf erzeugte lediglich eine `index.html` und eine `app.js`. Der Python-Server kam erst mit dem zweiten Prompt dazu, als es um die Synchronisation zwischen Geräten ging. Architektonisch gesehen ist diese Wahl sinnvoll: die App funktioniert mit oder ohne Server und speichert die Daten grundsätzlich lokal. KISS - keep it simple, stupid.
+- **Konsistenz im Code:** Hier war ich positiv überrascht. Ich hatte erwartet, dass der Code mit jeder neuen Anfrage uneinheitlicher wird. Tatsächlich blieb er über alle Prompts und Programmiersprachen hinweg konsistent.
+- **Rückfragen:** Ich hatte erwartet, dass die KI bei ungenauen Anfragen nachfragt. Stattdessen traf die KI von sich aus Annahmen, egal wie vage die Anfrage war. Die erste Rückfrage überhaupt kam erst beim Prompt *„Add the ability to power on the espresso machine on a timer“*. 
 
 ### Was wäre besser gewesen?
 
 - **Weniger Annahmen, mehr Rückfragen:** Gerade bei grundlegenden Entscheidungen wie Architektur, Datenmodell oder Umfang wäre es sinnvoll, wenn die KI zuerst nachfragt, statt einfach anzunehmen.
 - **Mehr Interaktion:** Ein stärker iterativer Ablauf, bei dem Zwischenstände abgestimmt werden, hätte vermutlich zu einem passenderen Ergebnis geführt.
 - **Tests mit echten Systemen:** Statt gegen Mockup-Systeme zu testen, wären Tests mit den tatsächlichen Systemen (z. B. meiner Home-Assistant-Instanz) aussagekräftiger gewesen.
+- **Kontext:** Damit das Ergebnis wirklich brauchbar wird, benötigt die KI Kontextinformationen. Der Grat zwischen zu viel und zu wenig Kontext ist schmal. Zu viel Kontext kann die Token-Nutzung unnötig erhöhen, zu wenig Kontext führt zu Annahmen, die nicht brauchbar sind.
 
 ### Fazit
 
-Vibe Coding eignet sich sehr gut, um schnell einen beeindruckenden ersten Prototyp zu bekommen. Für ein wirklich brauchbares Ergebnis braucht es aber präzise Prompts, eigenes Fachwissen zur Kontrolle und die Bereitschaft, die Annahmen der KI kritisch zu hinterfragen.
+Vibe Coding eignet sich sehr gut, um schnell einen beeindruckenden ersten Prototyp zu bekommen. Der produzierte Code ist fachlich korrekt. Automatische Tests helfen dabei, ein lauffähiges Endergebnis zu erhalten. Für ein wirklich brauchbares Ergebnis braucht es aber präzise Prompts, eigenes Fachwissen zur Kontrolle und die Bereitschaft, die Annahmen der KI kritisch zu hinterfragen. Die Frage "wie viel Kontext braucht die KI?" entscheidet maßgeblich über das Endergebnis.
 
 ---
 
