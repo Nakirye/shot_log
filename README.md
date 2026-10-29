@@ -1,134 +1,134 @@
 # Shot Log
 
-Shot Log ist ein Espresso-Tagebuch: Für jeden Shot werden Bohne, Mahlgrad, Dosis, Bezugsmenge, Bezugszeit und Geschmack festgehalten. So lässt sich nachvollziehen, mit welchen Einstellungen eine Bohne oder ein Blend am besten schmeckt. Zusätzlich lässt sich die Espressomaschine über Home Assistant ein- und ausschalten, auch zeitgesteuert.
+Shot Log is an espresso journal: for every shot it records the bean, grind size, dose, yield, brew time and taste. This makes it easy to trace which settings make a bean or blend taste best. In addition, the espresso machine can be switched on and off via Home Assistant, also on a schedule.
 
-Die App ist im Rahmen einer Übung zum Thema **Vibe Coding** entstanden. Im Vordergrund stand nicht ein perfektes Endprodukt, sondern Vibe Coding selbst auszuprobieren und die Erfahrungen damit festzuhalten.
+The app was created as part of an exercise on **vibe coding**. The focus was not on a perfect end product, but on trying out vibe coding itself and documenting the experience.
 
-- **Verwendetes Tool:** Claude Code
-- **Tech-Stack:** Frontend aus `index.html`, `styles.css` und `app.js` (Vanilla JavaScript, ohne Framework), installierbar als PWA. Ein kleiner Python-Server (nur Standardbibliothek) liefert die App aus, synchronisiert die Daten zwischen Geräten und steuert die Maschine.
+- **Tool used:** Claude Code
+- **Tech stack:** Frontend made of `index.html`, `styles.css` and `app.js` (vanilla JavaScript, no framework), installable as a PWA. A small Python server (standard library only) serves the app, syncs the data between devices and controls the machine.
 
-## Funktionen
+## Features
 
-- **Shots erfassen:** Bohne, Datum, Mahlgrad, Bezugszeit, Dosis und Bezugsmenge (mit automatisch berechneter Brew Ratio). Optional auch Wassertemperatur, Pre-Infusion und Siebträgerkorb.
-- **Geschmack bewerten:** Sterne-Bewertung, „Barista Compass“ mit Tipps zum Einstellen, Geschmacksprofil per Schieberegler, Aromen-Tags und Notizen.
-- **Bohnen und Rezepte verwalten:** Bohnen anlegen, Shots nach Bohne filtern und sortieren, Espresso-Rezepte speichern und wiederverwenden. Auch Pour-over-Rezepte (z. B. V60) sind möglich.
-- **Sync zwischen Geräten:** Alles wird zuerst lokal gespeichert und danach mit dem Server abgeglichen. Bei Konflikten gewinnt pro Shot bzw. Bohne die zuletzt gemachte Änderung.
-- **Maschine steuern (optional):** sofort ein- und ausschalten, einmaliger Timer, Wochenplan (z. B. Mo–Fr um 06:30) und automatisches Abschalten nach 60 Minuten.
-- **Offline-fähig und installierbar** als App am Handy (PWA).
+- **Log shots:** bean, date, grind size, brew time, dose and yield (with automatically calculated brew ratio). Optionally also water temperature, pre-infusion and portafilter basket.
+- **Rate the taste:** star rating, "Barista Compass" with dial-in tips, taste profile via sliders, flavor tags and notes.
+- **Manage beans and recipes:** add beans, filter and sort shots by bean, save and reuse espresso recipes. Pour-over recipes (e.g. V60) are supported as well.
+- **Sync between devices:** everything is stored locally first and then synced with the server. On conflicts, the most recent change wins per shot or bean.
+- **Machine control (optional):** switch on and off immediately, one-time timer, weekly schedule (e.g. Mon–Fri at 06:30) and automatic power-off after 60 minutes.
+- **Works offline and is installable** as an app on your phone (PWA).
 
-## Installation & Start
+## Installation & Startup
 
-Voraussetzung ist Python 3.9 oder neuer. Weitere Abhängigkeiten gibt es nicht.
+Requires Python 3.9 or newer. There are no other dependencies.
 
 ```sh
 python3 server.py
 ```
 
-Danach ist die App unter `http://localhost:8000` erreichbar. Beim ersten Start erzeugt der Server einen **Sync-Token**, gibt ihn in der Konsole aus und speichert ihn in `data/token`. Die Daten selbst liegen in `data/shotlog.json`.
+The app is then available at `http://localhost:8000`. On first start, the server generates a **sync token**, prints it to the console and stores it in `data/token`. The data itself is stored in `data/shotlog.json`.
 
-| Option / Umgebungsvariable | Standard |
+| Option / environment variable | Default |
 |---|---|
 | `--port`, `PORT` | `8000` |
 | `--host` | `0.0.0.0` |
 | `--data` | `./data` |
-| `SHOTLOG_TOKEN` | Inhalt von `data/token`, wird beim ersten Start erzeugt |
-| `--ha-url`, `HA_URL` | – (Maschinensteuerung aus) |
+| `SHOTLOG_TOKEN` | Contents of `data/token`, generated on first start |
+| `--ha-url`, `HA_URL` | – (machine control disabled) |
 | `--ha-token`, `HA_TOKEN` | – |
 | `--ha-entity`, `HA_ENTITY` | – |
-| `--auto-off`, `AUTO_OFF_MINUTES` | `60` (`0` = nie) |
+| `--auto-off`, `AUTO_OFF_MINUTES` | `60` (`0` = never) |
 
-### Sync zwischen Geräten
+### Sync between devices
 
-1. In der App **Setup → Sync between devices** öffnen.
-2. Den Sync-Token einfügen und auf **Save & sync** tippen. Das Feld *Server URL* bleibt leer, wenn die App direkt vom Server geöffnet wird.
-3. Auf jedem weiteren Gerät wiederholen.
+1. In the app, open **Setup → Sync between devices**.
+2. Paste the sync token and tap **Save & sync**. Leave the *Server URL* field empty if the app is opened directly from the server.
+3. Repeat on every other device.
 
-### Maschine einschalten (Home Assistant)
+### Switching on the machine (Home Assistant)
 
-Der Server schaltet eine Home-Assistant-Entität, z. B. die smarte Steckdose der Maschine. Der Netzschalter der Maschine selbst bleibt dabei eingeschaltet.
+The server switches a Home Assistant entity, e.g. the machine's smart plug. The machine's own power switch stays switched on.
 
-1. In Home Assistant unter *Profil → Sicherheit → Langlebige Zugriffstoken* einen Token erstellen.
-2. Den Server so starten:
+1. In Home Assistant, create a token under *Profile → Security → Long-lived access tokens*.
+2. Start the server like this:
 
    ```sh
    HA_URL=http://homeassistant.local:8123 \
-   HA_TOKEN=<Token> \
+   HA_TOKEN=<token> \
    HA_ENTITY=switch.espresso_machine \
    python3 server.py
    ```
 
-Timer und Wochenplan laufen **am Server**. Sie funktionieren also auch, wenn das Handy im Standby oder offline ist. Wochenzeiten gelten in der Zeitzone des Servers. Der Home-Assistant-Token bleibt am Server und wird nie an die App geschickt.
+Timers and the weekly schedule run **on the server**. They therefore also work when the phone is in standby or offline. Weekly times use the server's time zone. The Home Assistant token stays on the server and is never sent to the app.
 
-### Als App am Handy installieren
+### Installing as an app on your phone
 
-Browser erlauben die Installation als PWA nur über **HTTPS** (Ausnahme: `localhost`). Über `http://192.168.x.x:8000` im Heimnetz lässt sich die App zwar nutzen und synchronisieren, aber nicht installieren. HTTPS bekommt man zum Beispiel so:
+Browsers only allow installing a PWA over **HTTPS** (exception: `localhost`). Via `http://192.168.x.x:8000` on your home network, the app can be used and synced, but not installed. You can get HTTPS, for example, like this:
 
-- **Tailscale:** `tailscale serve --bg 8000`, dann `https://<rechner>.<tailnet>.ts.net` am Handy öffnen.
-- **Reverse Proxy mit eigener Domain**, z. B. Caddy: `shots.example.com { reverse_proxy localhost:8000 }`
+- **Tailscale:** `tailscale serve --bg 8000`, then open `https://<machine>.<tailnet>.ts.net` on your phone.
+- **Reverse proxy with your own domain**, e.g. Caddy: `shots.example.com { reverse_proxy localhost:8000 }`
 
-Nach Änderungen in `public/` muss `CACHE` in `public/sw.js` erhöht werden, damit installierte Apps die neue Version laden.
+After changes in `public/`, `CACHE` in `public/sw.js` must be incremented so that installed apps load the new version.
 
-### Dateien
+### Files
 
 ```
-server.py                    Server: statische Dateien, Sync-API, Maschinensteuerung + Zeitplan
-public/index.html            Oberfläche
-public/app.js                App-Logik, Offline-Speicher, Sync-Client
-public/styles.css            Styles (hell/dunkel)
-public/sw.js                 Service Worker (Offline-Cache)
-public/manifest.webmanifest  PWA-Manifest
-public/icons/                App-Icons
+server.py                    Server: static files, sync API, machine control + schedule
+public/index.html            User interface
+public/app.js                App logic, offline storage, sync client
+public/styles.css            Styles (light/dark)
+public/sw.js                 Service worker (offline cache)
+public/manifest.webmanifest  PWA manifest
+public/icons/                App icons
 ```
 
 ---
 
-## Erfahrungen mit Vibe Coding
+## Experiences with Vibe Coding
 
-### Was hat gut funktioniert?
+### What worked well?
 
-- **Umfang schon nach einem Prompt:** Beeindruckend war, wie umfangreich und detailliert das Ergebnis bereits nach einem einzigen Prompt war. Die KI hat dabei viele Annahmen getroffen, zum Beispiel welche Daten ich zu einem Shot tracken möchte. In diesem Fall haben diese Annahmen größtenteils gut gepasst.
-- **Die KI „denkt mit“:** Sie hat nicht nur die gestellte Aufgabe abgearbeitet, sondern auch eigene Ideen eingebracht. Die Synchronisation zwischen mehreren Geräten hat zum Beispiel die KI selbst vorgeschlagen, ich habe den Vorschlag dann mit Prompt 2 aufgegriffen. Außerdem hat sie von sich aus auf Probleme beim Setup meines Servers hingewiesen und gleich passende Lösungen mitgeliefert. Ein Beispiel ist der Hinweis, dass die App nur über HTTPS als PWA installiert werden kann, samt Lösungsvorschlägen mit Tailscale oder einem Reverse Proxy.
-- **Nachvollziehbarkeit:** Die KI protokolliert sehr ausführlich, was sie gerade tut. Dadurch lässt sich gut verfolgen, welche Schritte sie setzt.
-- **Zielstrebigkeit:** Die KI führt die Aufgabe, die man ihr gibt, konsequent aus, komme, was wolle. Das hat allerdings auch eine Kehrseite (siehe unten).
+- **Scope after just one prompt:** It was impressive how extensive and detailed the result was after a single prompt. The AI made many assumptions, for example about which data I want to track for a shot. In this case, those assumptions mostly fit well.
+- **The AI "thinks along":** It didn't just work through the given task, but also contributed its own ideas. Syncing between multiple devices, for example, was suggested by the AI itself; I then picked up the suggestion in prompt 2. It also pointed out problems with my server setup on its own and supplied suitable solutions right away. One example is the note that the app can only be installed as a PWA over HTTPS, along with suggested solutions using Tailscale or a reverse proxy.
+- **Traceability:** The AI logs in great detail what it is currently doing. This makes it easy to follow which steps it takes.
+- **Determination:** The AI carries out the task it is given consistently, come what may. However, this also has a downside (see below).
 
-### Was hat nicht gut funktioniert?
+### What didn't work well?
 
-- **Überladenes Design:** Nach dem ersten Prompt war die Oberfläche sehr überladen und unübersichtlich, wenn man an den Use-Case (schnelles Erfassen von Rezepten, die wichtigsten Infos auf einen Blick) denkt.
-- **Keine Rückfragen bei großen Entscheidungen:** Die KI hat ohne eine einzige Rückfrage weitreichende Architekturentscheidungen getroffen und einfach als gegeben angenommen.
-- **Unnötige Features:** Neben sinnvollen Parametern wurden auch Dinge eingebaut, die ich nicht brauche, zum Beispiel ein Shot-Timer direkt im Formular.
-- **Design-Änderungen sind schwer zu vermitteln:** Konkrete gestalterische Änderungen in Worten so zu beschreiben, dass die KI sie wie gewünscht umsetzt, war sehr mühsam.
-- **Fachliche Logikfehler:** Wer sich mit der Thematik auskennt, erkennt schnell Logikfehler. Ein Beispiel: Die App ordnet einen Shot über den „Barista Compass“ ein, also nach Extraktion (sauer bis bitter) und Stärke. Direkt darunter bewertet man denselben Shot noch einmal über eigene Schieberegler für Säure, Süße und Bitterkeit. Das ist doppelt und kann sich widersprechen. Als zweites Beispiel ist noch das Generalisieren einer "korrekten" Brew Ratio (Verhältnis Kaffeemehl:Wasser im Espresso) und Extraktionszeit zu nennen. Das ergibt keinen Sinn, denn Barista wissen, dass u.A. der Mahlgrad einen sehr großen Einfluss auf die brew ratio UND Extraktionszeit haben kann, um ein trinkbares Ergebnis erreichen zu können. Außerdem basieren jegliche Rezept-Anpassungs-Empfehlungen der App auf Abweichungen dieser über alle Rezepte generalisierten Werte.
+- **Cluttered design:** After the first prompt, the interface was very cluttered and confusing, considering the use case (quickly logging recipes, the most important info at a glance).
+- **No follow-up questions on big decisions:** The AI made far-reaching architectural decisions without asking a single question and simply took them as given.
+- **Unnecessary features:** Besides useful parameters, things I don't need were also built in, for example a shot timer directly in the form.
+- **Design changes are hard to convey:** Describing concrete design changes in words so that the AI implements them as intended was very tedious.
+- **Domain logic errors:** Anyone familiar with the subject quickly spots logic errors. One example: the app classifies a shot via the "Barista Compass", i.e. by extraction (sour to bitter) and strength. Directly below, you rate the same shot again using separate sliders for acidity, sweetness and bitterness. This is redundant and can be contradictory. A second example is the generalization of a "correct" brew ratio (ratio of ground coffee to water in espresso) and extraction time. This makes no sense, because baristas know that, among other things, the grind size can have a very large influence on the brew ratio AND the extraction time needed to achieve a drinkable result. In addition, all of the app's recipe adjustment recommendations are based on deviations from these values generalized across all recipes.
 
 
 
-### Welche Probleme habe ich identifiziert?
+### What problems did I identify?
 
-- **Verhaspeln in den eigenen Tests:** Die KI hat sich in ihren selbst geschriebenen Tests verstrickt und dabei Probleme „gefunden“, die eigentlich keine waren. Das hat unnötig Tokens verbraucht, auf das Endergebnis aber keinen negativen Einfluss gehabt.
-- **Die Qualität hängt stark vom Prompt ab:** Je abstrakter die Anfrage und je weniger Informationen man der KI mitgibt, desto freier interpretiert sie die Aufgabe, und desto unbrauchbarer wird das Ergebnis. Auf den ersten Blick wirkt es durchaus beeindruckend. Sobald man genauer hinschaut, fällt das Kartenhaus aber in sich zusammen, man findet Logikfehler und Features bzw. Designentscheidungen, die aus fachlicher Perspektive wenig Sinn ergeben.
-- **Expertentum:** ohne fundiertes Fachwissen (Expertenwissen) ist es schwer, die Qualität des Ergebnisses zu beurteilen. Die KI kann nicht beurteilen, ob das Endergebnis fachlich korrekt ist und Sinn ergibt. Sie kann nur die gestellte Aufgabe erledigen, "denkt" zwar mit, verfügt aber bei weitem nicht über das fundierte Fachwissen in der Thematik, das für ein gutes, praktikables Ergebnis ausschlaggebend ist.
+- **Getting tangled up in its own tests:** The AI got tangled up in its self-written tests and "found" problems that weren't actually problems. This used up tokens unnecessarily, but had no negative impact on the end result.
+- **Quality depends heavily on the prompt:** The more abstract the request and the less information you give the AI, the more freely it interprets the task, and the less usable the result becomes. At first glance it does look impressive. As soon as you look more closely, however, the house of cards collapses: you find logic errors and features or design decisions that make little sense from a domain perspective.
+- **Expertise:** Without solid domain knowledge (expert knowledge), it is hard to judge the quality of the result. The AI cannot judge whether the end result is correct from a domain perspective and makes sense. It can only complete the given task; it does "think along", but by far does not have the solid domain knowledge of the subject that is crucial for a good, practical result.
 
-### Erwartung vs. Realität
+### Expectation vs. reality
 
-- **Architektur:** Ich hatte ein großes Backend erwartet. Der erste Durchlauf erzeugte lediglich eine `index.html` und eine `app.js`. Der Python-Server kam erst mit dem zweiten Prompt dazu, als es um die Synchronisation zwischen Geräten ging. Architektonisch gesehen ist diese Wahl sinnvoll: die App funktioniert mit oder ohne Server und speichert die Daten grundsätzlich lokal. KISS - keep it simple, stupid.
-- **Konsistenz im Code:** Hier war ich positiv überrascht. Ich hatte erwartet, dass der Code mit jeder neuen Anfrage uneinheitlicher wird. Tatsächlich blieb er über alle Prompts und Programmiersprachen hinweg konsistent.
-- **Rückfragen:** Ich hatte erwartet, dass die KI bei ungenauen Anfragen nachfragt. Stattdessen traf die KI von sich aus Annahmen, egal wie vage die Anfrage war. Die erste Rückfrage überhaupt kam erst beim Prompt *„Add the ability to power on the espresso machine on a timer“*. 
+- **Architecture:** I had expected a large backend. The first run produced merely an `index.html` and an `app.js`. The Python server was only added with the second prompt, when it came to syncing between devices. Architecturally, this choice makes sense: the app works with or without a server and always stores the data locally. KISS - keep it simple, stupid.
+- **Code consistency:** Here I was positively surprised. I had expected the code to become more inconsistent with every new request. In fact, it stayed consistent across all prompts and programming languages.
+- **Follow-up questions:** I had expected the AI to ask follow-up questions on vague requests. Instead, the AI made assumptions on its own, no matter how vague the request was. The very first follow-up question only came with the prompt *"Add the ability to power on the espresso machine on a timer"*.
 
-### Was wäre besser gewesen?
+### What would have been better?
 
-- **Weniger Annahmen, mehr Rückfragen:** Gerade bei grundlegenden Entscheidungen wie Architektur, Datenmodell oder Umfang wäre es sinnvoll, wenn die KI zuerst nachfragt, statt einfach anzunehmen.
-- **Mehr Interaktion:** Ein stärker iterativer Ablauf, bei dem Zwischenstände abgestimmt werden, hätte vermutlich zu einem passenderen Ergebnis geführt.
-- **Tests mit echten Systemen:** Statt gegen Mockup-Systeme zu testen, wären Tests mit den tatsächlichen Systemen (z. B. meiner Home-Assistant-Instanz) aussagekräftiger gewesen.
-- **Kontext:** Damit das Ergebnis wirklich brauchbar wird, benötigt die KI Kontextinformationen. Der Grat zwischen zu viel und zu wenig Kontext ist schmal. Zu viel Kontext kann die Token-Nutzung unnötig erhöhen, zu wenig Kontext führt zu Annahmen, die nicht brauchbar sind.
+- **Fewer assumptions, more follow-up questions:** Especially for fundamental decisions such as architecture, data model or scope, it would make sense for the AI to ask first instead of simply assuming.
+- **More interaction:** A more iterative process in which intermediate states are agreed upon would probably have led to a more suitable result.
+- **Tests with real systems:** Instead of testing against mock systems, tests with the actual systems (e.g. my Home Assistant instance) would have been more meaningful.
+- **Context:** For the result to be truly usable, the AI needs context information. The line between too much and too little context is thin. Too much context can unnecessarily increase token usage; too little context leads to assumptions that are not usable.
 
-### Fazit
+### Conclusion
 
-Vibe Coding eignet sich sehr gut, um schnell einen beeindruckenden ersten Prototyp zu bekommen. Der produzierte Code ist fachlich korrekt. Automatische Tests helfen dabei, ein lauffähiges Endergebnis zu erhalten. Für ein wirklich brauchbares Ergebnis braucht es aber präzise Prompts, eigenes Fachwissen zur Kontrolle und die Bereitschaft, die Annahmen der KI kritisch zu hinterfragen. Die Frage "wie viel Kontext braucht die KI?" entscheidet maßgeblich über das Endergebnis.
+Vibe coding is very well suited for quickly getting an impressive first prototype. The code produced is technically correct. Automated tests help to get a working end result. For a truly usable result, however, you need precise prompts, your own domain knowledge for verification and the willingness to critically question the AI's assumptions. The question "how much context does the AI need?" largely determines the end result.
 
 ---
 
-## Verwendete Prompts
+## Prompts used
 
-Alle Prompts in chronologischer Reihenfolge, unverändert so, wie ich sie in Claude Code eingegeben habe.
+All prompts in chronological order, unchanged, exactly as I entered them in Claude Code.
 
 ### Prompt 1
 
